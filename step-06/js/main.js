@@ -61,12 +61,12 @@ var peerConnectionConfig = {
 };
 
 // Attach event handlers
-start.addEventListener("click", function(){
-    startFn(true);
-}, false);
-receive.addEventListener("click", function(){
-    startFn(false);
-}, false);
+// start.addEventListener("click", function(){
+//     startFn(true);
+// }, false);
+// receive.addEventListener("click", function(){
+//     startFn(false);
+// }, false);
 snapBtn.addEventListener('click', snapPhoto);
 sendBtn.addEventListener('click', sendPhoto);
 snapAndSendBtn.addEventListener('click', snapAndSend);
@@ -102,6 +102,8 @@ socket.on('joined', function(room, clientId) {
     isInitiator = false;
     grabWebCamVideo();
     createPeerConnection(isInitiator, configuration);
+
+    setTimeout(function(){ console.log('added strammm' + new Date().getTime());peerConn.addStream(localStream); }, 5000);
 });
 
 socket.on('full', function(room) {
@@ -112,7 +114,9 @@ socket.on('full', function(room) {
 
 socket.on('ready', function() {
     console.log('Socket is ready');
-    createPeerConnection(isInitiator, configuration);
+    setTimeout(function(){ createPeerConnection(isInitiator, configuration); }, 3000);
+
+
     if (isInitiator) {
 
     } else {
@@ -223,6 +227,8 @@ function createPeerConnection(isInitiator, config) {
     console.log('Creating Peer connection as initiator?', isInitiator, 'config:',
         config);
     peerConn = new RTCPeerConnection(config);
+    console.log("onaddstream" + new Date().getTime());
+    peerConn.onaddstream = gotRemoteStream;
 
     // send any ice candidates to the other peer
     peerConn.onicecandidate = function(event) {
@@ -245,12 +251,8 @@ function createPeerConnection(isInitiator, config) {
         peerConn.addStream(localStream);
         dataChannel = peerConn.createDataChannel('photos');
         onDataChannelCreated(dataChannel);
-
-        console.log('Creating an offer');
-        peerConn.createOffer(onLocalSessionCreated, logError);
+        setTimeout(function(){ console.log('Creating an offer' + new Date().getTime());peerConn.createOffer(onLocalSessionCreated, logError); }, 5000);
     } else {
-        console.log("onaddstream" + new Date().getTime());
-        peerConn.onaddstream = gotRemoteStream;
         peerConn.ondatachannel = function(event) {
             console.log('ondatachannel:', event.channel);
             dataChannel = event.channel;
