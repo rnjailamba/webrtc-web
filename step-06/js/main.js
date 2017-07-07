@@ -17,14 +17,56 @@ var video = document.querySelector('video');
 var photo = document.getElementById('photo');
 var photoContext = photo.getContext('2d');
 var trail = document.getElementById('trail');
+var remote = document.getElementById('remote');
+var start = document.getElementById('start');
+var receive = document.getElementById('receive');
 var snapBtn = document.getElementById('snap');
 var sendBtn = document.getElementById('send');
 var snapAndSendBtn = document.getElementById('snapAndSend');
 
+video.addEventListener('loadedmetadata', function() {
+    trace('Local video videoWidth: ' + this.videoWidth +
+        'px,  videoHeight: ' + this.videoHeight + 'px');
+});
+
+var startTime;
+
+remote.addEventListener('loadedmetadata', function() {
+    trace('Remote video videoWidth: ' + this.videoWidth +
+        'px,  videoHeight: ' + this.videoHeight + 'px');
+});
+
+remote.onresize = function() {
+    trace('Remote video size changed to ' +
+        remote.videoWidth + 'x' + remote.videoHeight);
+    // We'll use the first onresize callback as an indication that video has started
+    // playing out.
+    if (startTime) {
+        var elapsedTime = window.performance.now() - startTime;
+        trace('Setup time: ' + elapsedTime.toFixed(3) + 'ms');
+        startTime = null;
+    }
+};
+
 var photoContextW;
 var photoContextH;
 
+var firsttime = true;
+
+var peerConnectionConfig = {
+    'iceServers': [
+        {'urls': 'stun:stun.services.mozilla.com'},
+        {'urls': 'stun:stun.l.google.com:19302'},
+    ]
+};
+
 // Attach event handlers
+start.addEventListener("click", function(){
+    startFn(true);
+}, false);
+receive.addEventListener("click", function(){
+    startFn(false);
+}, false);
 snapBtn.addEventListener('click', snapPhoto);
 sendBtn.addEventListener('click', sendPhoto);
 snapAndSendBtn.addEventListener('click', snapAndSend);
@@ -58,8 +100,8 @@ socket.on('created', function(room, clientId) {
 socket.on('joined', function(room, clientId) {
     console.log('This peer has joined room', room, 'with client ID', clientId);
     isInitiator = false;
-    createPeerConnection(isInitiator, configuration);
     grabWebCamVideo();
+    createPeerConnection(isInitiator, configuration);
 });
 
 socket.on('full', function(room) {
@@ -125,12 +167,16 @@ function grabWebCamVideo() {
             alert('getUserMedia() error: ' + e.name);
         });
 }
+var localStream;
 
 function gotStream(stream) {
     var streamURL = window.URL.createObjectURL(stream);
     console.log('getUserMedia video stream URL:', streamURL);
     window.stream = stream; // stream available to console
+    localStream = stream;
+    console.log("localstream = " + localStream)
     video.src = streamURL;
+    remote.src = streamURL;
     video.onloadedmetadata = function() {
         photo.width = photoContextW = video.videoWidth;
         photo.height = photoContextH = video.videoHeight;
@@ -190,12 +236,15 @@ function createPeerConnection(isInitiator, config) {
 
     if (isInitiator) {
         console.log('Creating Data Channel');
+        // peerConn.onaddstream = gotRemoteStream;
+
         dataChannel = peerConn.createDataChannel('photos');
         onDataChannelCreated(dataChannel);
 
         console.log('Creating an offer');
         peerConn.createOffer(onLocalSessionCreated, logError);
     } else {
+        // peerConn.addStream(localStream);
         peerConn.ondatachannel = function(event) {
             console.log('ondatachannel:', event.channel);
             dataChannel = event.channel;
@@ -359,4 +408,72 @@ function randomToken() {
 
 function logError(err) {
     console.log(err.toString(), err);
+}
+var peerConnection;
+
+function startFn(isCaller) {
+    console.log("start");
+    if(isCaller){
+        console.log("firsttime");
+        peerConnection = peerConn;
+        // peerConnection = new RTCPeerConnection(peerConnectionConfig);
+        peerConnection.onicecandidate = gotIceCandidate;
+        peerConnection.onaddstream = gotRemoteStream;
+        // peerConnection.addStream(localStream);
+    }
+    else{
+        console.log("not firsttime");
+        peerConnection = peerConn;
+        // peerConnection = new RTCPeerConnection(peerConnectionConfig);
+        peerConnection.onicecandidate = gotIceCandidate;
+        // peerConnection.onaddstream = gotRemoteStream;
+        peerConnection.addStream(localStream);
+        peerConnection.createOffer(gotDescription, createOfferError);
+
+    }
+    // if(isCaller) {
+    //     peerConnection.createOffer(gotDescription, createOfferError);
+    // }
+}
+
+function gotDescription(description) {
+    console.log('got description');
+    peerConnection.setLocalDescription(description, function () {
+        console.log('sending local desccc:', peerConnection.localDescription);
+        sendMessage(peerConnection.localDescription);
+    }, function() {console.log('set description error')});
+}
+
+function gotIceCandidate(event) {
+    if(event.candidate != null) {
+        sendMessage({
+            type: 'candidate',
+            label: event.candidate.sdpMLineIndex,
+            id: event.candidate.sdpMid,
+            candidate: event.candidate.candidate
+        });
+    }
+}
+
+function gotRemoteStream(event) {
+    console.log('GOTT remote stream' + event.stream);
+    remote.src = window.URL.createObjectURL(event.stream);
+    console.log(remote)
+    console.log(remote.src)
+}
+
+function createOfferError(error) {
+    console.log(error);
+}
+
+function trace(text) {
+    if (text[text.length - 1] === '\n') {
+        text = text.substring(0, text.length - 1);
+    }
+    if (window.performance) {
+        var now = (window.performance.now() / 1000).toFixed(3);
+        console.log(now + ': ' + text);
+    } else {
+        console.log(text);
+    }
 }
