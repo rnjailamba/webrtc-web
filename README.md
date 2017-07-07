@@ -1,7 +1,6 @@
 # My Notes
-Teleconsulting
 
-Scope
+## Scope
 * http://iswebrtcreadyyet.com/ webrtc not ready
 * http://www.makeuseof.com/tag/heres-make-internet-explorer-safari-work-webrtc/ not ready
 * microsoft says no https://msdn.microsoft.com/en-us/library/mt806139(v=vs.85).aspx
