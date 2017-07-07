@@ -114,8 +114,7 @@ socket.on('ready', function() {
     console.log('Socket is ready');
     createPeerConnection(isInitiator, configuration);
     if (isInitiator) {
-        console.log('added stram');
-        peerConn.addStream(localStream);
+
     } else {
 
     }
@@ -182,7 +181,7 @@ function gotStream(stream) {
     localStream = stream;
     console.log("localstream = " + localStream)
     video.src = streamURL;
-    remote.src = streamURL;
+    // remote.src = streamURL;
     video.onloadedmetadata = function() {
         photo.width = photoContextW = video.videoWidth;
         photo.height = photoContextH = video.videoHeight;
@@ -242,14 +241,15 @@ function createPeerConnection(isInitiator, config) {
 
     if (isInitiator) {
         console.log('Creating Data Channel');
-
+        console.log('added stram' + new Date().getTime());
+        peerConn.addStream(localStream);
         dataChannel = peerConn.createDataChannel('photos');
         onDataChannelCreated(dataChannel);
 
         console.log('Creating an offer');
         peerConn.createOffer(onLocalSessionCreated, logError);
     } else {
-        console.log("onaddstream");
+        console.log("onaddstream" + new Date().getTime());
         peerConn.onaddstream = gotRemoteStream;
         peerConn.ondatachannel = function(event) {
             console.log('ondatachannel:', event.channel);
