@@ -113,6 +113,12 @@ socket.on('full', function(room) {
 socket.on('ready', function() {
     console.log('Socket is ready');
     createPeerConnection(isInitiator, configuration);
+    if (isInitiator) {
+        console.log('added stram');
+        peerConn.addStream(localStream);
+    } else {
+
+    }
 });
 
 socket.on('log', function(array) {
@@ -236,7 +242,6 @@ function createPeerConnection(isInitiator, config) {
 
     if (isInitiator) {
         console.log('Creating Data Channel');
-        // peerConn.onaddstream = gotRemoteStream;
 
         dataChannel = peerConn.createDataChannel('photos');
         onDataChannelCreated(dataChannel);
@@ -244,7 +249,8 @@ function createPeerConnection(isInitiator, config) {
         console.log('Creating an offer');
         peerConn.createOffer(onLocalSessionCreated, logError);
     } else {
-        // peerConn.addStream(localStream);
+        console.log("onaddstream");
+        peerConn.onaddstream = gotRemoteStream;
         peerConn.ondatachannel = function(event) {
             console.log('ondatachannel:', event.channel);
             dataChannel = event.channel;
