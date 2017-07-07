@@ -9,7 +9,7 @@ Scope
 * conclusive list https://en.wikipedia.org/wiki/WebRTC#Support
 * twillio helpless https://support.twilio.com/hc/en-us/articles/223180848-Which-browsers-support-WebRTC-
 
-Study
+## Study
 * http://io13webrtc.appspot.com/#45 through server or no answer
 * stun vs turn https://stackoverflow.com/questions/23292520/webrtc-how-many-stun-turn-servers-do-i-need-to-specify
 * tut1 full https://www.html5rocks.com/en/tutorials/webrtc/basics/#toc-simple
